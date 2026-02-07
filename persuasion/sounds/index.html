@@ -1,1 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MP3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+        
+        :root {
+            --white: #ffffff;
+            --black: #000000;
+            --gray: #888888;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--black);
+            color: var(--white);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--black);
+            border-bottom: 2px solid var(--white);
+            padding: 16px 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .search-box {
+            flex: 1;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--white);
+            background: var(--black);
+            color: var(--white);
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .search-box input::placeholder {
+            color: var(--gray);
+        }
+        
+        .upload-btn {
+            width: 44px;
+            height: 44px;
+            border: 2px solid var(--white);
+            background: var(--white);
+            color: var(--black);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .upload-btn:hover {
+            background: var(--gray);
+            border-color: var(--gray);
+        }
+        
+        /* Main Container */
+        .container {
+            padding: 90px 20px 40px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Sound Cards */
+        .sound-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .sound-card {
+            border: 2px solid var(--white);
+            background: var(--black);
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        
+        .sound-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .player-section {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--white);
+            border-radius: 50%;
+            background: var(--white);
+            color: var(--black);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .play-btn:hover {
+            background: var(--gray);
+            border-color: var(--gray);
+        }
+        
+        .play-btn.playing {
+            background: var(--black);
+            color: var(--white);
+        }
+        
+        .sound-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .sound-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .sound-stats {
+            font-size: 13px;
+            color: var(--gray);
+        }
+        
+        .sound-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .download-btn, .report-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--white);
+            background: var(--black);
+            color: var(--white);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            text-decoration: none;
+        }
+        
+        .download-btn:hover {
+            background: var(--white);
+            color: var(--black);
+        }
+        
+        .report-btn:hover {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            height: 4px;
+            background: #333;
+            cursor: pointer;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--white);
+            width: 0%;
+            transition: width 0.1s;
+        }
+        
+        /* Upload Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .upload-form {
+            width: 100%;
+            max-width: 400px;
+            background: var(--white);
+            color: var(--black);
+            padding: 40px;
+            border: 3px solid var(--black);
+        }
+        
+        .upload-form h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .upload-form p {
+            color: var(--gray);
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--black);
+            font-size: 15px;
+            background: var(--white);
+            color: var(--black);
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        
+        .btn-cancel {
+            width: 100%;
+            padding: 16px;
+            background: var(--white);
+            color: var(--black);
+            border: 2px solid var(--black);
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+        
+        #uploadStatus {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+        
+        /* Report Modal */
+        .report-form {
+            width: 100%;
+            max-width: 360px;
+            background: var(--white);
+            color: var(--black);
+            padding: 32px;
+        }
+        
+        .report-form h3 {
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        
+        .report-form textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--black);
+            margin-bottom: 16px;
+            font-family: inherit;
+            resize: none;
+            background: var(--white);
+            color: var(--black);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            border: 2px dashed var(--gray);
+        }
+        
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--gray);
+            border-top-color: var(--white);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Audio Element Hidden */
+        audio {
+            display: none;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
 
+    <!-- Header -->
+    <div class="header">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search sounds..." onkeypress="if(event.key==='Enter') search()">
+        </div>
+        <button class="upload-btn" onclick="openUpload()" title="Upload">+</button>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="sound-list" id="soundList">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="upload-form">
+            <h2>Upload Sound</h2>
+            <p>Share your audio</p>
+            
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="soundTitle" placeholder="Sound title">
+            </div>
+            
+            <div class="form-group">
+                <label>MP3 URL</label>
+                <input type="url" id="mp3Url" placeholder="https://...mp3">
+            </div>
+            
+            <button class="btn-submit" onclick="uploadSound()">Upload</button>
+            <button class="btn-cancel" onclick="closeUpload()">Cancel</button>
+            
+            <p id="uploadStatus"></p>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div class="modal" id="reportModal">
+        <div class="report-form">
+            <h3>Report Sound</h3>
+            <p style="color: var(--gray); font-size: 13px; margin-bottom: 16px;">Why are you reporting this?</p>
+            <textarea id="reportReason" rows="4" placeholder="Describe the issue..."></textarea>
+            <button class="btn-submit" onclick="submitReport()">Submit Report</button>
+            <button class="btn-cancel" onclick="closeReport()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycby9K4w7PCj1s2LEXnrJ423iJzaCUH6Bqbrr92IFLITyUxV_v7gLK2sR7yM_ot9rNro4oQ/exec';
+        
+        let sounds = [];
+        let currentAudio = null;
+        let currentSoundId = null;
+        let reportSoundId = null;
+        
+        window.onload = loadSounds;
+        
+        async function loadSounds() {
+            try {
+                const res = await fetch(API_URL + '?action=getSounds');
+                const data = await res.json();
+                
+                if (data.success) {
+                    sounds = data.sounds;
+                    renderSounds();
+                } else {
+                    showEmpty();
+                }
+            } catch (e) {
+                document.getElementById('soundList').innerHTML = '<div class="empty-state"><h3>Error</h3><p>Failed to load sounds</p></div>';
+            }
+        }
+        
+        function renderSounds() {
+            const list = document.getElementById('soundList');
+            
+            if (sounds.length === 0) {
+                showEmpty();
+                return;
+            }
+            
+            list.innerHTML = sounds.map(s => `
+                <div class="sound-card" data-id="${s.soundId}">
+                    <div class="player-section">
+                        <button class="play-btn" id="play-${s.soundId}" onclick="togglePlay(${s.soundId})">▶</button>
+                        
+                        <div class="sound-info">
+                            <div class="sound-title">${escapeHtml(s.title)}</div>
+                            <div class="sound-stats">
+                                <span id="plays-${s.soundId}">${formatPlays(s.plays)}</span> plays
+                            </div>
+                        </div>
+                        
+                        <div class="sound-actions">
+                            <a href="${escapeHtml(s.mp3Url)}" download class="download-btn" title="Download">⬇</a>
+                            <button class="report-btn" onclick="openReport(${s.soundId})" title="Report">⚠</button>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-container" onclick="seek(event, ${s.soundId})">
+                        <div class="progress-bar" id="progress-${s.soundId}"></div>
+                    </div>
+                    
+                    <audio id="audio-${s.soundId}" src="${escapeHtml(s.mp3Url)}" preload="none"></audio>
+                </div>
+            `).join('');
+        }
+        
+        async function togglePlay(soundId) {
+            const audio = document.getElementById('audio-' + soundId);
+            const btn = document.getElementById('play-' + soundId);
+            
+            if (currentAudio && currentAudio !== audio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                document.querySelectorAll('.play-btn').forEach(b => b.textContent = '▶');
+                document.querySelectorAll('.play-btn').forEach(b => b.classList.remove('playing'));
+            }
+            
+            if (audio.paused) {
+                audio.play();
+                btn.textContent = '⏸';
+                btn.classList.add('playing');
+                currentAudio = audio;
+                currentSoundId = soundId;
+                
+                audio.ontimeupdate = () => {
+                    const pct = (audio.currentTime / audio.duration) * 100;
+                    document.getElementById('progress-' + soundId).style.width = pct + '%';
+                };
+                
+                audio.onended = () => {
+                    btn.textContent = '▶';
+                    btn.classList.remove('playing');
+                    document.getElementById('progress-' + soundId).style.width = '0%';
+                };
+                
+                if (!sessionStorage.getItem('played-' + soundId)) {
+                    sessionStorage.setItem('played-' + soundId, 'true');
+                    const res = await fetch(API_URL + '?action=addPlay', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'text/plain'},
+                        body: JSON.stringify({soundId: soundId})
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        document.getElementById('plays-' + soundId).textContent = formatPlays(data.plays);
+                    }
+                }
+                
+            } else {
+                audio.pause();
+                btn.textContent = '▶';
+                btn.classList.remove('playing');
+            }
+        }
+        
+        function seek(event, soundId) {
+            const audio = document.getElementById('audio-' + soundId);
+            const rect = event.currentTarget.getBoundingClientRect();
+            const pct = (event.clientX - rect.left) / rect.width;
+            audio.currentTime = pct * audio.duration;
+        }
+        
+        async function search() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                loadSounds();
+                return;
+            }
+            
+            try {
+                const res = await fetch(API_URL + '?action=search&query=' + encodeURIComponent(query));
+                const data = await res.json();
+                
+                if (data.success) {
+                    sounds = data.sounds;
+                    renderSounds();
+                }
+            } catch (e) {}
+        }
+        
+        function openUpload() {
+            document.getElementById('uploadModal').classList.add('active');
+        }
+        
+        function closeUpload() {
+            document.getElementById('uploadModal').classList.remove('active');
+            document.getElementById('uploadStatus').textContent = '';
+        }
+        
+        async function uploadSound() {
+            const title = document.getElementById('soundTitle').value.trim();
+            const url = document.getElementById('mp3Url').value.trim();
+            const status = document.getElementById('uploadStatus');
+            
+            if (!title || !url) {
+                status.textContent = '❌ Title and URL required';
+                return;
+            }
+            
+            status.textContent = 'Uploading...';
+            
+            try {
+                const res = await fetch(API_URL + '?action=uploadSound', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'text/plain'},
+                    body: JSON.stringify({title: title, mp3Url: url})
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    status.textContent = '✅ Uploaded!';
+                    setTimeout(() => {
+                        closeUpload();
+                        loadSounds();
+                    }, 1000);
+                } else {
+                    status.textContent = '❌ Failed';
+                }
+            } catch (e) {
+                status.textContent = '❌ Error';
+            }
+        }
+        
+        function openReport(soundId) {
+            reportSoundId = soundId;
+            document.getElementById('reportModal').classList.add('active');
+        }
+        
+        function closeReport() {
+            document.getElementById('reportModal').classList.remove('active');
+            document.getElementById('reportReason').value = '';
+        }
+        
+        async function submitReport() {
+            const reason = document.getElementById('reportReason').value.trim();
+            
+            if (!reason) return;
+            
+            try {
+                await fetch(API_URL + '?action=report', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'text/plain'},
+                    body: JSON.stringify({soundId: reportSoundId, reason: reason})
+                });
+                
+                closeReport();
+                alert('Report submitted. Thank you!');
+            } catch (e) {}
+        }
+        
+        function showEmpty() {
+            document.getElementById('soundList').innerHTML = `
+                <div class="empty-state">
+                    <h3>No sounds yet</h3>
+                    <p>Be the first to upload!</p>
+                </div>
+            `;
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatPlays(num) {
+            if (!num) return '0';
+            if (num >= 1000000) return (num/1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num/1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+        
+        document.querySelectorAll('.modal').forEach(m => {
+            m.addEventListener('click', (e) => {
+                if (e.target === m) {
+                    m.classList.remove('active');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
